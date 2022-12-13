@@ -57,7 +57,7 @@ declare module "react-native-twilio-video-webrtc" {
 
   export type DataTrackEventCb = (t: DataTrackEventCbArgs) => void;
 
-  interface RoomEventCommonArgs {
+  export interface RoomEventCommonArgs {
     roomName: string;
     roomSid: string;
   }
@@ -66,16 +66,16 @@ declare module "react-native-twilio-video-webrtc" {
     error: any;
   };
 
-  type RoomEventArgs = RoomEventCommonArgs & {
+  export type RoomEventArgs = RoomEventCommonArgs & {
     participants: Participant[];
     localParticipant: Participant;
   };
 
-  type ParticipantEventArgs = RoomEventCommonArgs & {
+  export type ParticipantEventArgs = RoomEventCommonArgs & {
     participant: Participant;
   };
 
-  type NetworkLevelChangeEventArgs = {
+  export type NetworkLevelChangeEventArgs = {
     participant: Participant;
     isLocalUser: boolean;
     quality: number;
@@ -130,7 +130,7 @@ declare module "react-native-twilio-video-webrtc" {
     ref?: React.Ref<any>;
   };
 
-  type iOSConnectParams = {
+  export type iOSConnectParams = {
     roomName?: string;
     accessToken: string;
     cameraType?: cameraType;
@@ -146,7 +146,7 @@ declare module "react-native-twilio-video-webrtc" {
     enableNetworkQualityReporting?: boolean;
   };
 
-  type androidConnectParams = {
+  export type androidConnectParams = {
     roomName?: string;
     accessToken: string;
     cameraType?: cameraType;
