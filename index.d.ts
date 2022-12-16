@@ -7,10 +7,10 @@ declare module "react-native-twilio-video-webrtc" {
     videoTrackSid: string;
   }
 
-  type scaleType = "fit" | "fill";
-  type cameraType = "front" | "back";
+  export type scaleType = "fit" | "fill";
+  export type cameraType = "front" | "back";
 
-  interface TwilioVideoParticipantViewProps extends ViewProps {
+  export interface TwilioVideoParticipantViewProps extends ViewProps {
     trackIdentifier: TrackIdentifier;
     ref?: React.Ref<any>;
     scaleType?: scaleType;
@@ -21,7 +21,7 @@ declare module "react-native-twilio-video-webrtc" {
      applyZOrder?: boolean | undefined;
   }
 
-  interface TwilioVideoLocalViewProps extends ViewProps {
+  export interface TwilioVideoLocalViewProps extends ViewProps {
     enabled: boolean;
     ref?: React.Ref<any>;
     scaleType?: scaleType;
@@ -32,12 +32,12 @@ declare module "react-native-twilio-video-webrtc" {
     applyZOrder?: boolean | undefined;
   }
 
-  interface Participant {
+  export interface Participant {
     sid: string;
     identity: string;
   }
 
-  interface Track {
+  export interface Track {
     enabled: boolean;
     trackName: string;
     trackSid: string;
