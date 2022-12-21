@@ -166,14 +166,16 @@ RCT_EXPORT_METHOD(setRemoteAudioPlayback:(NSString *)participantSid enabled:(BOO
 }
 
 RCT_EXPORT_METHOD(startLocalVideo) {
-  TVICameraSourceOptions *options = [TVICameraSourceOptions optionsWithBlock:^(TVICameraSourceOptionsBuilder * _Nonnull builder) {
+    if (self.localVideoTrack == nil) {
+        TVICameraSourceOptions *options = [TVICameraSourceOptions optionsWithBlock:^(TVICameraSourceOptionsBuilder * _Nonnull builder) {
 
-  }];
-  self.camera = [[TVICameraSource alloc] initWithOptions:options delegate:self];
-  if (self.camera == nil) {
-      return;
-  }
-  self.localVideoTrack = [TVILocalVideoTrack trackWithSource:self.camera enabled:NO name:@"camera"];
+        }];
+        self.camera = [[TVICameraSource alloc] initWithOptions:options delegate:self];
+        if (self.camera == nil) {
+            return;
+        }
+        self.localVideoTrack = [TVILocalVideoTrack trackWithSource:self.camera enabled:NO name:@"camera"];
+    }
 }
 
 - (void)startCameraCapture:(NSString *)cameraType {
@@ -206,7 +208,7 @@ RCT_EXPORT_METHOD(startLocalAudio) {
 }
 
 RCT_EXPORT_METHOD(stopLocalVideo) {
-    [self clearCameraInstance];
+    //[self clearCameraInstance];
 }
 
 RCT_EXPORT_METHOD(stopLocalAudio) {
@@ -478,6 +480,7 @@ RCT_EXPORT_METHOD(disconnect) {
   [self clearCameraInstance];
   [self.room disconnect];
   self.localAudioTrack = nil;
+  self.localVideoTrack = nil;
 }
 
 - (void)clearCameraInstance {
