@@ -200,7 +200,9 @@ RCT_EXPORT_METHOD(startLocalVideo) {
 }
 
 RCT_EXPORT_METHOD(startLocalAudio) {
-    self.localAudioTrack = [TVILocalAudioTrack trackWithOptions:nil enabled:YES name:@"microphone"];
+    if (self.localAudioTrack == nil) {
+        self.localAudioTrack = [TVILocalAudioTrack trackWithOptions:nil enabled:YES name:@"microphone"];
+    }
 }
 
 RCT_EXPORT_METHOD(stopLocalVideo) {
@@ -208,7 +210,7 @@ RCT_EXPORT_METHOD(stopLocalVideo) {
 }
 
 RCT_EXPORT_METHOD(stopLocalAudio) {
-  self.localAudioTrack = nil;
+  //self.localAudioTrack = nil;
 }
 
 RCT_EXPORT_METHOD(publishLocalVideo) {
@@ -475,6 +477,7 @@ RCT_EXPORT_METHOD(sendString:(nonnull NSString *)message) {
 RCT_EXPORT_METHOD(disconnect) {
   [self clearCameraInstance];
   [self.room disconnect];
+  self.localAudioTrack = nil;
 }
 
 - (void)clearCameraInstance {
