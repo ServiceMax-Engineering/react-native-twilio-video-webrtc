@@ -122,7 +122,6 @@ class StoreData {
   public static String cameraType = "";
   public static boolean enableH264Codec = false;
   public static AudioFocusRequest audioFocusRequest;
-  public static AudioAttributes playbackAttributes;
 
   /*
    * A Room represents communication between the client and one or more participants.
