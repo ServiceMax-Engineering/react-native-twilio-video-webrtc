@@ -234,6 +234,13 @@ export default class TwilioVideo extends Component {
   }
 
   /**
+   * Get remote video last frame image path
+   */
+  getRemoteVideoLastFrameImagePath () {
+    return TWVideoModule.getRemoteVideoLastFrameImagePath()
+  }
+
+  /**
    * Connect to given room name using the JWT access token
    * @param  {String} roomName    The connecting room name
    * @param  {String} accessToken The Twilio's JWT access token
