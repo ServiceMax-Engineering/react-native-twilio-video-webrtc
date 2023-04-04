@@ -9,6 +9,7 @@
 #import "RCTTWVideoModule.h"
 
 #import "RCTTWSerializable.h"
+#import "TVIVideoFrame+Image.h"
 
 static NSString* roomDidConnect               = @"roomDidConnect";
 static NSString* roomDidDisconnect            = @"roomDidDisconnect";
@@ -61,7 +62,7 @@ TVIVideoFormat *RCTTWVideoModuleCameraSourceSelectVideoFormatBySize(AVCaptureDev
 }
 
 
-@interface RCTTWVideoModule () <TVIRemoteDataTrackDelegate, TVIRemoteParticipantDelegate, TVIRoomDelegate, TVICameraSourceDelegate, TVILocalParticipantDelegate, TVIAppScreenSourceDelegate>
+@interface RCTTWVideoModule () <TVIRemoteDataTrackDelegate, TVIRemoteParticipantDelegate, TVIRoomDelegate, TVICameraSourceDelegate, TVILocalParticipantDelegate, TVIAppScreenSourceDelegate, TVIVideoRenderer>
 
 @property (strong, nonatomic) TVICameraSource *camera;
 @property (strong, nonatomic) TVILocalVideoTrack* localVideoTrack;
@@ -69,6 +70,7 @@ TVIVideoFormat *RCTTWVideoModuleCameraSourceSelectVideoFormatBySize(AVCaptureDev
 @property (strong, nonatomic) TVILocalDataTrack* localDataTrack;
 @property (strong, nonatomic) TVIAppScreenSource *screen;
 @property (strong, nonatomic) TVILocalParticipant* localParticipant;
+@property (strong, nonatomic) TVIVideoFrame *lastRemoteVideoFrame;
 @property (strong, nonatomic) TVIRoom *room;
 @property (nonatomic) BOOL listening;
 
@@ -490,6 +492,12 @@ RCT_EXPORT_METHOD(disconnect) {
     }
 }
 
+RCT_REMAP_METHOD(getRemoteVideoLastFrameImagePath, resolver:(RCTPromiseResolveBlock)resolve
+                 rejecter:(RCTPromiseRejectBlock)reject) {
+    NSString *lastRemoteVideoImagePath = [self.lastRemoteVideoFrame getImagePath];
+    resolve(lastRemoteVideoImagePath);
+}
+
 # pragma mark - Common
 
 -(void)sendEventCheckingListenerWithName:(NSString *)event body:(NSDictionary *)body {
@@ -654,6 +662,16 @@ RCT_EXPORT_METHOD(disconnect) {
 
 - (void)localParticipant:(nonnull TVILocalParticipant *)participant networkQualityLevelDidChange:(TVINetworkQualityLevel)networkQualityLevel {
     [self sendEventCheckingListenerWithName:networkQualityLevelsChanged body:@{ @"participant": [participant toJSON], @"isLocalUser": [NSNumber numberWithBool:true], @"quality": [NSNumber numberWithInt:(int)networkQualityLevel]}];
+}
+
+# pragma mark - TVIVideoRenderer
+
+- (void)renderFrame:(nonnull TVIVideoFrame *)frame {
+    self.lastRemoteVideoFrame = frame;
+}
+
+- (void)updateVideoSize:(CMVideoDimensions)videoSize orientation:(TVIVideoOrientation)orientation {
+    // nothing to do
 }
 
 @end
