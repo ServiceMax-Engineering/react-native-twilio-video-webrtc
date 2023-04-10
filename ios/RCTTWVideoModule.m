@@ -36,6 +36,7 @@ static NSString* cameraInterruptionEnded      = @"cameraInterruptionEnded";
 static NSString* cameraDidStopRunning         = @"cameraDidStopRunning";
 static NSString* statsReceived                = @"statsReceived";
 static NSString* networkQualityLevelsChanged  = @"networkQualityLevelsChanged";
+static NSString* videoFrameCaptured  = @"videoFrameCaptured";
 
 static const CMVideoDimensions kRCTTWVideoAppCameraSourceDimensions = (CMVideoDimensions){900, 720};
 
@@ -70,8 +71,10 @@ TVIVideoFormat *RCTTWVideoModuleCameraSourceSelectVideoFormatBySize(AVCaptureDev
 @property (strong, nonatomic) TVILocalDataTrack* localDataTrack;
 @property (strong, nonatomic) TVIAppScreenSource *screen;
 @property (strong, nonatomic) TVILocalParticipant* localParticipant;
-@property (strong, nonatomic) TVIVideoFrame *lastRemoteVideoFrame;
+@property (strong, nonatomic, nullable) TVIRemoteVideoTrack* remoteVideoTrack;
+@property (strong, nonatomic) TVIVideoFrame *lastVideoFrame;
 @property (strong, nonatomic) TVIRoom *room;
+@property (nonatomic, assign, getter=shouldMirror) BOOL mirror;
 @property (nonatomic) BOOL listening;
 
 @end
@@ -119,22 +122,28 @@ RCT_EXPORT_MODULE();
 }
 
 - (void)addLocalView:(TVIVideoView *)view {
-  if (self.localVideoTrack != nil) {
-    [self.localVideoTrack addRenderer:view];
-  }
-  [self updateLocalViewMirroring:view];
+    if (self.localVideoTrack != nil) {
+        [self.localVideoTrack addRenderer:view];
+        if (![[self.localVideoTrack renderers] containsObject:self]) {
+            [self.localVideoTrack addRenderer:self];
+        }
+    }
+    [self updateLocalViewMirroring:view];
 }
 
 - (void)updateLocalViewMirroring:(TVIVideoView *)view {
-  if (self.camera && self.camera.device.position == AVCaptureDevicePositionFront) {
-    view.mirror = true;
-  }
+    if (self.camera && self.camera.device.position == AVCaptureDevicePositionFront) {
+        view.mirror = true;
+    }
 }
 
 - (void)removeLocalView:(TVIVideoView *)view {
-  if (self.localVideoTrack != nil) {
-    [self.localVideoTrack removeRenderer:view];
-  }
+    if (self.localVideoTrack != nil) {
+        [self.localVideoTrack removeRenderer:view];
+        if ([[self.localVideoTrack renderers] containsObject:self]) {
+            [self.localVideoTrack addRenderer:self];
+        }
+    }
 }
 
 - (void)removeParticipantView:(TVIVideoView *)view sid:(NSString *)sid trackSid:(NSString *)trackSid {
@@ -191,14 +200,20 @@ RCT_EXPORT_METHOD(startLocalVideo) {
     camera = [TVICameraSource captureDeviceForPosition:AVCaptureDevicePositionFront];
   }
 
-  [self.camera startCaptureWithDevice:camera completion:^(AVCaptureDevice *device,
+    [self.camera startCaptureWithDevice:camera completion:^(AVCaptureDevice *device,
           TVIVideoFormat *startFormat,
           NSError *error) {
       if (!error) {
-          for (TVIVideoView *renderer in self.localVideoTrack.renderers) {
-            [self updateLocalViewMirroring:renderer];
-          }
-          [self sendEventCheckingListenerWithName:cameraDidStart body:nil];
+          [self.camera selectCaptureDevice:device completion:^(AVCaptureDevice *device,
+                  TVIVideoFormat *startFormat,
+                  NSError *error) {
+              if (!error) {
+                  for (TVIVideoView *renderer in self.localVideoTrack.renderers) {
+                    [self updateLocalViewMirroring:renderer];
+                  }
+                  [self sendEventCheckingListenerWithName:cameraDidStart body:nil];
+              }
+          }];
       }
   }];
 }
@@ -483,6 +498,7 @@ RCT_EXPORT_METHOD(disconnect) {
   [self.room disconnect];
   self.localAudioTrack = nil;
   self.localVideoTrack = nil;
+  self.lastVideoFrame = nil;
 }
 
 - (void)clearCameraInstance {
@@ -490,12 +506,12 @@ RCT_EXPORT_METHOD(disconnect) {
     if (self.camera) {
         [self.camera stopCapture];
     }
+    self.lastVideoFrame = nil;
 }
 
-RCT_REMAP_METHOD(getRemoteVideoLastFrameImagePath, resolver:(RCTPromiseResolveBlock)resolve
-                 rejecter:(RCTPromiseRejectBlock)reject) {
-    NSString *lastRemoteVideoImagePath = [self.lastRemoteVideoFrame getImagePath];
-    resolve(lastRemoteVideoImagePath);
+RCT_EXPORT_METHOD(captureVideoFrame) {
+    NSString *captureLastVideoFrameImagePath = [self.lastVideoFrame getImagePath:self.remoteVideoTrack ? false : true isMirroring:self.mirror];
+    [self sendEventCheckingListenerWithName:videoFrameCaptured body:@{ @"path": captureLastVideoFrameImagePath}];
 }
 
 # pragma mark - Common
@@ -628,10 +644,16 @@ RCT_REMAP_METHOD(getRemoteVideoLastFrameImagePath, resolver:(RCTPromiseResolveBl
 }
 
 - (void)remoteParticipant:(TVIRemoteParticipant *)participant didEnableVideoTrack:(TVIRemoteVideoTrackPublication *)publication {
+  self.remoteVideoTrack = (TVIRemoteVideoTrack *)[publication videoTrack];
+  [self.remoteVideoTrack addRenderer:self];
   [self sendEventCheckingListenerWithName:participantEnabledVideoTrack body:@{ @"participant": [participant toJSON], @"track": [publication toJSON] }];
 }
 
 - (void)remoteParticipant:(TVIRemoteParticipant *)participant didDisableVideoTrack:(TVIRemoteVideoTrackPublication *)publication {
+  self.remoteVideoTrack = (TVIRemoteVideoTrack *)[publication videoTrack];
+  [self.remoteVideoTrack removeRenderer:self];
+  self.remoteVideoTrack = nil;
+  self.lastVideoFrame = nil;
   [self sendEventCheckingListenerWithName:participantDisabledVideoTrack body:@{ @"participant": [participant toJSON], @"track": [publication toJSON] }];
 }
 
@@ -664,10 +686,14 @@ RCT_REMAP_METHOD(getRemoteVideoLastFrameImagePath, resolver:(RCTPromiseResolveBl
     [self sendEventCheckingListenerWithName:networkQualityLevelsChanged body:@{ @"participant": [participant toJSON], @"isLocalUser": [NSNumber numberWithBool:true], @"quality": [NSNumber numberWithInt:(int)networkQualityLevel]}];
 }
 
+-(void)localParticipant:(TVILocalParticipant *)participant didPublishVideoTrack:(TVILocalVideoTrackPublication *)videoTrackPublication {
+    
+}
+
 # pragma mark - TVIVideoRenderer
 
 - (void)renderFrame:(nonnull TVIVideoFrame *)frame {
-    self.lastRemoteVideoFrame = frame;
+    self.lastVideoFrame = frame;
 }
 
 - (void)updateVideoSize:(CMVideoDimensions)videoSize orientation:(TVIVideoOrientation)orientation {
