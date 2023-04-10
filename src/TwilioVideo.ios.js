@@ -152,6 +152,10 @@ export default class TwilioVideo extends Component {
      * camera will require calling `_startLocalVideo`.
      */
     autoInitializeCamera: PropTypes.bool,
+    /**
+     * Callback that is called when video frame is captured
+     */
+    onVideoFrameCaptured: PropTypes.func,
     ...View.propTypes
   };
 
@@ -234,10 +238,10 @@ export default class TwilioVideo extends Component {
   }
 
   /**
-   * Get remote video last frame image path
+   * capture video last frame
    */
-  getRemoteVideoLastFrameImagePath () {
-    return TWVideoModule.getRemoteVideoLastFrameImagePath()
+  captureVideoFrame () {
+    TWVideoModule.captureVideoFrame()
   }
 
   /**
@@ -456,6 +460,11 @@ export default class TwilioVideo extends Component {
       this._eventEmitter.addListener('onDominantSpeakerDidChange', (data) => {
         if (this.props.onDominantSpeakerDidChange) {
           this.props.onDominantSpeakerDidChange(data)
+        }
+      })
+      this._eventEmitter.addListener('videoFrameCaptured', (data) => {
+        if (this.props.onVideoFrameCaptured) {
+          this.props.onVideoFrameCaptured(data)
         }
       })
     ]
