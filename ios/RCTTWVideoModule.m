@@ -631,10 +631,16 @@ RCT_EXPORT_METHOD(captureVideoFrame) {
 }
 
 - (void)didSubscribeToVideoTrack:(TVIRemoteVideoTrack *)videoTrack publication:(TVIRemoteVideoTrackPublication *)publication forParticipant:(TVIRemoteParticipant *)participant {
+    self.remoteVideoTrack = (TVIRemoteVideoTrack *)[publication videoTrack];
+    [self.remoteVideoTrack addRenderer:self];
     [self sendEventCheckingListenerWithName:participantAddedVideoTrack body:@{ @"participant": [participant toJSON], @"track": [publication toJSON] }];
 }
 
 - (void)didUnsubscribeFromVideoTrack:(TVIRemoteVideoTrack *)videoTrack publication:(TVIRemoteVideoTrackPublication *)publication forParticipant:(TVIRemoteParticipant *)participant {
+    self.remoteVideoTrack = (TVIRemoteVideoTrack *)[publication videoTrack];
+    [self.remoteVideoTrack removeRenderer:self];
+    self.remoteVideoTrack = nil;
+    self.lastVideoFrame = nil;
     [self sendEventCheckingListenerWithName:participantRemovedVideoTrack body:@{ @"participant": [participant toJSON], @"track": [publication toJSON] }];
 }
 
@@ -647,16 +653,10 @@ RCT_EXPORT_METHOD(captureVideoFrame) {
 }
 
 - (void)remoteParticipant:(TVIRemoteParticipant *)participant didEnableVideoTrack:(TVIRemoteVideoTrackPublication *)publication {
-  self.remoteVideoTrack = (TVIRemoteVideoTrack *)[publication videoTrack];
-  [self.remoteVideoTrack addRenderer:self];
   [self sendEventCheckingListenerWithName:participantEnabledVideoTrack body:@{ @"participant": [participant toJSON], @"track": [publication toJSON] }];
 }
 
 - (void)remoteParticipant:(TVIRemoteParticipant *)participant didDisableVideoTrack:(TVIRemoteVideoTrackPublication *)publication {
-  self.remoteVideoTrack = (TVIRemoteVideoTrack *)[publication videoTrack];
-  [self.remoteVideoTrack removeRenderer:self];
-  self.remoteVideoTrack = nil;
-  self.lastVideoFrame = nil;
   [self sendEventCheckingListenerWithName:participantDisabledVideoTrack body:@{ @"participant": [participant toJSON], @"track": [publication toJSON] }];
 }
 
