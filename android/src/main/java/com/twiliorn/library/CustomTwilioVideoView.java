@@ -16,6 +16,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Bitmap;
 import android.media.AudioAttributes;
 import android.media.AudioDeviceInfo;
 import android.media.AudioFocusRequest;
@@ -27,6 +28,7 @@ import androidx.annotation.StringDef;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
+import android.view.OrientationEventListener;
 import android.view.View;
 
 import com.facebook.react.bridge.LifecycleEventListener;
@@ -112,6 +114,7 @@ import static com.twiliorn.library.CustomTwilioVideoView.Events.ON_STATS_RECEIVE
 import static com.twiliorn.library.CustomTwilioVideoView.Events.ON_VIDEO_CHANGED;
 import static com.twiliorn.library.CustomTwilioVideoView.Events.ON_DOMINANT_SPEAKER_CHANGED;
 import static com.twiliorn.library.CustomTwilioVideoView.Events.ON_LOCAL_PARTICIPANT_SUPPORTED_CODECS;
+import static com.twiliorn.library.CustomTwilioVideoView.Events.ON_VIDEO_FRAME_CAPTURED;
 
 class StoreData {
   public static boolean enableRemoteAudio = false;
@@ -141,7 +144,7 @@ class StoreData {
    * to an associated view.
    */
   public static PatchedVideoView thumbnailVideoView;
-
+  public static PatchedVideoView remoteThumbnailVideoView;
   public static AudioManager audioManager;
   public static int previousAudioMode;
   public static boolean disconnectedFromOnDestroy;
@@ -160,6 +163,8 @@ public class CustomTwilioVideoView extends View implements LifecycleEventListene
     private static String backFacingDevice;
     private boolean maintainVideoTrackInBackground = false;
     private String cameraType = "";
+
+    private String currentDeviceOrientation = "UNKNOWN";
 
     @Retention(RetentionPolicy.SOURCE)
     @StringDef({Events.ON_CAMERA_SWITCHED,
@@ -185,6 +190,7 @@ public class CustomTwilioVideoView extends View implements LifecycleEventListene
             Events.ON_NETWORK_QUALITY_LEVELS_CHANGED,
             Events.ON_DOMINANT_SPEAKER_CHANGED,
             Events.ON_LOCAL_PARTICIPANT_SUPPORTED_CODECS,
+            Events.ON_VIDEO_FRAME_CAPTURED,
     })
     public @interface Events {
         String ON_CAMERA_SWITCHED = "onCameraSwitched";
@@ -210,6 +216,7 @@ public class CustomTwilioVideoView extends View implements LifecycleEventListene
         String ON_NETWORK_QUALITY_LEVELS_CHANGED = "onNetworkQualityLevelsChanged";
         String ON_DOMINANT_SPEAKER_CHANGED = "onDominantSpeakerDidChange";
         String ON_LOCAL_PARTICIPANT_SUPPORTED_CODECS = "onLocalParticipantSupportedCodecs";
+        String ON_VIDEO_FRAME_CAPTURED = "onVideoFrameCaptured";
     }
 
     private final ThemedReactContext themedReactContext;
@@ -377,7 +384,7 @@ public class CustomTwilioVideoView extends View implements LifecycleEventListene
                 themedReactContext.getCurrentActivity().setVolumeControlStream(AudioManager.STREAM_VOICE_CALL);
             }
 
-
+            this.specificOrientationListener.enable();
         }
     }
 
@@ -400,6 +407,8 @@ public class CustomTwilioVideoView extends View implements LifecycleEventListene
           StoreData.localVideoTrack.release();
           StoreData.localVideoTrack = null;
         }
+
+        this.specificOrientationListener.disable();
     }
 
     @Override
@@ -436,7 +445,7 @@ public class CustomTwilioVideoView extends View implements LifecycleEventListene
         // Quit the data track message thread
         dataTrackMessageThread.quit();
 
-
+        this.specificOrientationListener.disable();
     }
 
     public void releaseResource() {
@@ -697,6 +706,24 @@ public class CustomTwilioVideoView extends View implements LifecycleEventListene
             if (StoreData.thumbnailVideoView != null && StoreData.thumbnailVideoView.getVisibility() == View.VISIBLE) {
               StoreData.thumbnailVideoView.setMirror(!isBackCamera);
             }
+        }
+    }
+
+    public void captureVideoFrame() {
+        PatchedVideoView videoView = StoreData.isVideoEnabled ? StoreData.thumbnailVideoView : StoreData.remoteThumbnailVideoView;
+        if (videoView != null) {
+            videoView.setVideoViewCaptureListener(new PatchedVideoView.VideoViewCaptureListener() {
+                @Override
+                public void onBitmapReady(Bitmap bitMap) {
+                    String path = BitmapImageHelper.saveImage(bitMap, getContext(), currentDeviceOrientation);
+                    WritableMap event = new WritableNativeMap();
+                    event.putString("path", path);
+                    pushEvent(CustomTwilioVideoView.this, ON_VIDEO_FRAME_CAPTURED, event);
+                }
+            });
+
+            Context context = getContext();
+            videoView.takeScreenShot();
         }
     }
 
@@ -1148,6 +1175,7 @@ public class CustomTwilioVideoView extends View implements LifecycleEventListene
             @Override
             public void onVideoTrackUnsubscribed(RemoteParticipant participant, RemoteVideoTrackPublication publication, RemoteVideoTrack videoTrack) {
                 removeParticipantVideo(participant, publication);
+                StoreData.remoteThumbnailVideoView = null;
             }
 
             @Override
@@ -1161,7 +1189,7 @@ public class CustomTwilioVideoView extends View implements LifecycleEventListene
 
             @Override
             public void onVideoTrackUnpublished(RemoteParticipant participant, RemoteVideoTrackPublication publication) {
-
+                StoreData.remoteThumbnailVideoView = null;
             }
 
             @Override
@@ -1319,6 +1347,7 @@ public class CustomTwilioVideoView extends View implements LifecycleEventListene
                     }
                     if (publication.getTrackSid().equals(trackSid)) {
                         track.addSink(v);
+                        StoreData.remoteThumbnailVideoView = v;
                     } else {
                         track.removeSink(v);
                     }
@@ -1351,4 +1380,30 @@ public class CustomTwilioVideoView extends View implements LifecycleEventListene
             }
         };
     }
+
+// ===== Orientation =================================================================================
+
+    private OrientationEventListener specificOrientationListener = new OrientationEventListener(getContext()) {
+        @Override
+        public void onOrientationChanged(int orientation) {
+
+            if (orientation >= 0 && orientation <= 359) {
+                String specificOrientation = "UNKNOWN";
+
+                if (orientation >= 0 && orientation < 45) {
+                    specificOrientation = "PORTRAIT";
+                } else if (orientation >= 45 && orientation < 135) {
+                    specificOrientation = "LANDSCAPE_RIGHT";
+                } else if (orientation >= 135 && orientation < 225) {
+                    specificOrientation = "PORTRAIT_UPSIDE_DOWN";
+                } else if (orientation >= 225 && orientation < 315) {
+                    specificOrientation = "LANDSCAPE_LEFT";
+                } else if (orientation >= 315 && orientation < 360) {
+                    specificOrientation = "PORTRAIT";
+                }
+                currentDeviceOrientation = specificOrientation;
+            }
+        }
+    };
+
 }
