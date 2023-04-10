@@ -512,7 +512,9 @@ RCT_EXPORT_METHOD(disconnect) {
 
 RCT_EXPORT_METHOD(captureVideoFrame) {
     NSString *captureLastVideoFrameImagePath = [self.lastVideoFrame getImagePath:self.remoteVideoTrack ? false : true isMirroring:self.mirror];
-    [self sendEventCheckingListenerWithName:videoFrameCaptured body:@{ @"path": captureLastVideoFrameImagePath}];
+    if (captureLastVideoFrameImagePath) {
+        [self sendEventCheckingListenerWithName:videoFrameCaptured body:@{ @"path": captureLastVideoFrameImagePath}];
+    }
 }
 
 # pragma mark - Common
