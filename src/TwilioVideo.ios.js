@@ -461,7 +461,7 @@ export default class TwilioVideo extends Component {
         if (this.props.onDominantSpeakerDidChange) {
           this.props.onDominantSpeakerDidChange(data)
         }
-      })
+      }),
       this._eventEmitter.addListener('videoFrameCaptured', (data) => {
         if (this.props.onVideoFrameCaptured) {
           this.props.onVideoFrameCaptured(data)

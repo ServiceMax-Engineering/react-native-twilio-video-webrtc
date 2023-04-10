@@ -117,7 +117,8 @@ RCT_EXPORT_MODULE();
     cameraInterruptionEnded,
     statsReceived,
     networkQualityLevelsChanged,
-    dominantSpeakerDidChange
+    dominantSpeakerDidChange,
+    videoFrameCaptured
   ];
 }
 
