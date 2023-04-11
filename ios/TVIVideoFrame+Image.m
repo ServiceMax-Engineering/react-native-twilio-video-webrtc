@@ -138,6 +138,7 @@
     
     vImageConvert_420Yp8_Cb8_Cr8ToARGB8888(&yPlaneBuffer, &vPlaneBuffer, &uPlaneBuffer, &destinationImageBuffer, outInfo, permuteMap, 255, 0);
     
+    free(outInfo);
     CVPixelBufferUnlockBaseAddress(frame.imageBuffer, 0);
     CVPixelBufferUnlockBaseAddress(pixelBufferRef, 0);
 }
