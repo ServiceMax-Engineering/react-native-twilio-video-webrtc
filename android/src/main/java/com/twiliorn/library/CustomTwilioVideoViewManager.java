@@ -42,6 +42,7 @@ import static com.twiliorn.library.CustomTwilioVideoView.Events.ON_STATS_RECEIVE
 import static com.twiliorn.library.CustomTwilioVideoView.Events.ON_NETWORK_QUALITY_LEVELS_CHANGED;
 import static com.twiliorn.library.CustomTwilioVideoView.Events.ON_DOMINANT_SPEAKER_CHANGED;
 import static com.twiliorn.library.CustomTwilioVideoView.Events.ON_LOCAL_PARTICIPANT_SUPPORTED_CODECS;
+import static com.twiliorn.library.CustomTwilioVideoView.Events.ON_VIDEO_FRAME_CAPTURED;
 
 public class CustomTwilioVideoViewManager extends SimpleViewManager<CustomTwilioVideoView> {
     public static final String REACT_CLASS = "RNCustomTwilioVideoView";
@@ -60,6 +61,8 @@ public class CustomTwilioVideoViewManager extends SimpleViewManager<CustomTwilio
     private static final int SEND_STRING = 12;
     private static final int PUBLISH_VIDEO = 13;
     private static final int PUBLISH_AUDIO = 14;
+
+    private static final int CAPTURE_VIDEO_FRAME = 15;
 
     @Override
     public String getName() {
@@ -143,6 +146,8 @@ public class CustomTwilioVideoViewManager extends SimpleViewManager<CustomTwilio
             case PUBLISH_AUDIO:
                 view.publishLocalAudio(args.getBoolean(0));
                 break;
+            case CAPTURE_VIDEO_FRAME:
+                view.captureVideoFrame();
         }
     }
 
@@ -171,7 +176,8 @@ public class CustomTwilioVideoViewManager extends SimpleViewManager<CustomTwilio
 
         map.putAll(MapBuilder.of(
                 ON_PARTICIPANT_REMOVED_DATA_TRACK, MapBuilder.of("registrationName", ON_PARTICIPANT_REMOVED_DATA_TRACK),
-                ON_LOCAL_PARTICIPANT_SUPPORTED_CODECS, MapBuilder.of("registrationName", ON_LOCAL_PARTICIPANT_SUPPORTED_CODECS)
+                ON_LOCAL_PARTICIPANT_SUPPORTED_CODECS, MapBuilder.of("registrationName", ON_LOCAL_PARTICIPANT_SUPPORTED_CODECS),
+                ON_VIDEO_FRAME_CAPTURED, MapBuilder.of("registrationName", ON_VIDEO_FRAME_CAPTURED)
         ));
 
         map.putAll(MapBuilder.of(
@@ -201,6 +207,7 @@ public class CustomTwilioVideoViewManager extends SimpleViewManager<CustomTwilio
                 .put("toggleRemoteSound", TOGGLE_REMOTE_SOUND)
                 .put("toggleBluetoothHeadset", TOGGLE_BLUETOOTH_HEADSET)
                 .put("sendString", SEND_STRING)
+                .put("captureVideoFrame", CAPTURE_VIDEO_FRAME)
                 .build();
     }
 }

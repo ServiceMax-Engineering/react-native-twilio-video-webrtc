@@ -122,7 +122,8 @@ declare module "react-native-twilio-video-webrtc" {
     onRoomParticipantDidDisconnect?: ParticipantEventCb;
     onNetworkQualityLevelsChanged?: NetworkLevelChangeEventCb;
     onLocalParticipantSupportedCodecs?: LocalParticipantSupportedCodecsCb;
-
+    onVideoFrameCaptured?: ({ path }: { path: string }) => void;
+    
     onStatsReceived?: (data: any) => void;
     onDataTrackMessageReceived?: DataTrackEventCb;
     // iOS only
@@ -166,6 +167,7 @@ declare module "react-native-twilio-video-webrtc" {
     setLocalAudioEnabled: (enabled: boolean) => Promise<boolean>;
     setRemoteAudioEnabled: (enabled: boolean) => Promise<boolean>;
     setBluetoothHeadsetConnected: (enabled: boolean) => Promise<boolean>;
+    captureVideoFrame: () => void;
     connect: (options: iOSConnectParams | androidConnectParams) => void;
     disconnect: () => void;
     flipCamera: () => void;

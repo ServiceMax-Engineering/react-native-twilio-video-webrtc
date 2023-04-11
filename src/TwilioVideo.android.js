@@ -148,7 +148,11 @@ const propTypes = {
   /**
      * Callback that is called after determining what codecs are supported
      */
-  onLocalParticipantSupportedCodecs: PropTypes.func
+  onLocalParticipantSupportedCodecs: PropTypes.func,
+ /**
+     * Callback that is called when video frame is captured
+     */
+  onVideoFrameCaptured: PropTypes.func
 }
 
 const nativeEvents = {
@@ -165,7 +169,8 @@ const nativeEvents = {
   toggleBluetoothHeadset: 11,
   sendString: 12,
   publishVideo: 13,
-  publishAudio: 14
+  publishAudio: 14,
+  captureVideoFrame: 15
 }
 
 class CustomTwilioVideoView extends Component {
@@ -261,6 +266,10 @@ class CustomTwilioVideoView extends Component {
     this.runCommand(nativeEvents.toggleSoundSetup, [speaker])
   }
 
+  captureVideoFrame() {
+    this.runCommand(nativeEvents.captureVideoFrame, [])
+  }
+
   runCommand (event, args) {
     switch (Platform.OS) {
       case 'android':
@@ -299,7 +308,8 @@ class CustomTwilioVideoView extends Component {
       'onStatsReceived',
       'onNetworkQualityLevelsChanged',
       'onDominantSpeakerDidChange',
-      'onLocalParticipantSupportedCodecs'
+      'onLocalParticipantSupportedCodecs',
+      'onVideoFrameCaptured'
     ].reduce((wrappedEvents, eventName) => {
       if (this.props[eventName]) {
         return {

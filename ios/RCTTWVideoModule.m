@@ -9,6 +9,7 @@
 #import "RCTTWVideoModule.h"
 
 #import "RCTTWSerializable.h"
+#import "TVIVideoFrame+Image.h"
 
 static NSString* roomDidConnect               = @"roomDidConnect";
 static NSString* roomDidDisconnect            = @"roomDidDisconnect";
@@ -35,6 +36,7 @@ static NSString* cameraInterruptionEnded      = @"cameraInterruptionEnded";
 static NSString* cameraDidStopRunning         = @"cameraDidStopRunning";
 static NSString* statsReceived                = @"statsReceived";
 static NSString* networkQualityLevelsChanged  = @"networkQualityLevelsChanged";
+static NSString* videoFrameCaptured  = @"videoFrameCaptured";
 
 static const CMVideoDimensions kRCTTWVideoAppCameraSourceDimensions = (CMVideoDimensions){900, 720};
 
@@ -61,7 +63,7 @@ TVIVideoFormat *RCTTWVideoModuleCameraSourceSelectVideoFormatBySize(AVCaptureDev
 }
 
 
-@interface RCTTWVideoModule () <TVIRemoteDataTrackDelegate, TVIRemoteParticipantDelegate, TVIRoomDelegate, TVICameraSourceDelegate, TVILocalParticipantDelegate, TVIAppScreenSourceDelegate>
+@interface RCTTWVideoModule () <TVIRemoteDataTrackDelegate, TVIRemoteParticipantDelegate, TVIRoomDelegate, TVICameraSourceDelegate, TVILocalParticipantDelegate, TVIAppScreenSourceDelegate, TVIVideoRenderer>
 
 @property (strong, nonatomic) TVICameraSource *camera;
 @property (strong, nonatomic) TVILocalVideoTrack* localVideoTrack;
@@ -69,7 +71,10 @@ TVIVideoFormat *RCTTWVideoModuleCameraSourceSelectVideoFormatBySize(AVCaptureDev
 @property (strong, nonatomic) TVILocalDataTrack* localDataTrack;
 @property (strong, nonatomic) TVIAppScreenSource *screen;
 @property (strong, nonatomic) TVILocalParticipant* localParticipant;
+@property (strong, nonatomic, nullable) TVIRemoteVideoTrack* remoteVideoTrack;
+@property (strong, nonatomic) TVIVideoFrame *lastVideoFrame;
 @property (strong, nonatomic) TVIRoom *room;
+@property (nonatomic, assign, getter=shouldMirror) BOOL mirror;
 @property (nonatomic) BOOL listening;
 
 @end
@@ -112,27 +117,34 @@ RCT_EXPORT_MODULE();
     cameraInterruptionEnded,
     statsReceived,
     networkQualityLevelsChanged,
-    dominantSpeakerDidChange
+    dominantSpeakerDidChange,
+    videoFrameCaptured
   ];
 }
 
 - (void)addLocalView:(TVIVideoView *)view {
-  if (self.localVideoTrack != nil) {
-    [self.localVideoTrack addRenderer:view];
-  }
-  [self updateLocalViewMirroring:view];
+    if (self.localVideoTrack != nil) {
+        [self.localVideoTrack addRenderer:view];
+        if (![[self.localVideoTrack renderers] containsObject:self]) {
+            [self.localVideoTrack addRenderer:self];
+        }
+    }
+    [self updateLocalViewMirroring:view];
 }
 
 - (void)updateLocalViewMirroring:(TVIVideoView *)view {
-  if (self.camera && self.camera.device.position == AVCaptureDevicePositionFront) {
-    view.mirror = true;
-  }
+    if (self.camera && self.camera.device.position == AVCaptureDevicePositionFront) {
+        view.mirror = true;
+    }
 }
 
 - (void)removeLocalView:(TVIVideoView *)view {
-  if (self.localVideoTrack != nil) {
-    [self.localVideoTrack removeRenderer:view];
-  }
+    if (self.localVideoTrack != nil) {
+        [self.localVideoTrack removeRenderer:view];
+        if ([[self.localVideoTrack renderers] containsObject:self]) {
+            [self.localVideoTrack addRenderer:self];
+        }
+    }
 }
 
 - (void)removeParticipantView:(TVIVideoView *)view sid:(NSString *)sid trackSid:(NSString *)trackSid {
@@ -189,14 +201,20 @@ RCT_EXPORT_METHOD(startLocalVideo) {
     camera = [TVICameraSource captureDeviceForPosition:AVCaptureDevicePositionFront];
   }
 
-  [self.camera startCaptureWithDevice:camera completion:^(AVCaptureDevice *device,
+    [self.camera startCaptureWithDevice:camera completion:^(AVCaptureDevice *device,
           TVIVideoFormat *startFormat,
           NSError *error) {
       if (!error) {
-          for (TVIVideoView *renderer in self.localVideoTrack.renderers) {
-            [self updateLocalViewMirroring:renderer];
-          }
-          [self sendEventCheckingListenerWithName:cameraDidStart body:nil];
+          [self.camera selectCaptureDevice:device completion:^(AVCaptureDevice *device,
+                  TVIVideoFormat *startFormat,
+                  NSError *error) {
+              if (!error) {
+                  for (TVIVideoView *renderer in self.localVideoTrack.renderers) {
+                    [self updateLocalViewMirroring:renderer];
+                  }
+                  [self sendEventCheckingListenerWithName:cameraDidStart body:nil];
+              }
+          }];
       }
   }];
 }
@@ -481,12 +499,21 @@ RCT_EXPORT_METHOD(disconnect) {
   [self.room disconnect];
   self.localAudioTrack = nil;
   self.localVideoTrack = nil;
+  self.lastVideoFrame = nil;
 }
 
 - (void)clearCameraInstance {
     // We are done with camera
     if (self.camera) {
         [self.camera stopCapture];
+    }
+    self.lastVideoFrame = nil;
+}
+
+RCT_EXPORT_METHOD(captureVideoFrame) {
+    NSString *captureLastVideoFrameImagePath = [self.lastVideoFrame getImagePath:self.remoteVideoTrack ? false : true isMirroring:self.mirror];
+    if (captureLastVideoFrameImagePath) {
+        [self sendEventCheckingListenerWithName:videoFrameCaptured body:@{ @"path": captureLastVideoFrameImagePath}];
     }
 }
 
@@ -604,10 +631,16 @@ RCT_EXPORT_METHOD(disconnect) {
 }
 
 - (void)didSubscribeToVideoTrack:(TVIRemoteVideoTrack *)videoTrack publication:(TVIRemoteVideoTrackPublication *)publication forParticipant:(TVIRemoteParticipant *)participant {
+    self.remoteVideoTrack = (TVIRemoteVideoTrack *)[publication videoTrack];
+    [self.remoteVideoTrack addRenderer:self];
     [self sendEventCheckingListenerWithName:participantAddedVideoTrack body:@{ @"participant": [participant toJSON], @"track": [publication toJSON] }];
 }
 
 - (void)didUnsubscribeFromVideoTrack:(TVIRemoteVideoTrack *)videoTrack publication:(TVIRemoteVideoTrackPublication *)publication forParticipant:(TVIRemoteParticipant *)participant {
+    self.remoteVideoTrack = (TVIRemoteVideoTrack *)[publication videoTrack];
+    [self.remoteVideoTrack removeRenderer:self];
+    self.remoteVideoTrack = nil;
+    self.lastVideoFrame = nil;
     [self sendEventCheckingListenerWithName:participantRemovedVideoTrack body:@{ @"participant": [participant toJSON], @"track": [publication toJSON] }];
 }
 
@@ -654,6 +687,20 @@ RCT_EXPORT_METHOD(disconnect) {
 
 - (void)localParticipant:(nonnull TVILocalParticipant *)participant networkQualityLevelDidChange:(TVINetworkQualityLevel)networkQualityLevel {
     [self sendEventCheckingListenerWithName:networkQualityLevelsChanged body:@{ @"participant": [participant toJSON], @"isLocalUser": [NSNumber numberWithBool:true], @"quality": [NSNumber numberWithInt:(int)networkQualityLevel]}];
+}
+
+-(void)localParticipant:(TVILocalParticipant *)participant didPublishVideoTrack:(TVILocalVideoTrackPublication *)videoTrackPublication {
+    
+}
+
+# pragma mark - TVIVideoRenderer
+
+- (void)renderFrame:(nonnull TVIVideoFrame *)frame {
+    self.lastVideoFrame = frame;
+}
+
+- (void)updateVideoSize:(CMVideoDimensions)videoSize orientation:(TVIVideoOrientation)orientation {
+    // nothing to do
 }
 
 @end
