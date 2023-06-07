@@ -497,8 +497,8 @@ RCT_EXPORT_METHOD(sendString:(nonnull NSString *)message) {
 RCT_EXPORT_METHOD(disconnect) {
   [self clearCameraInstance];
   [self.room disconnect];
-  self.localAudioTrack = nil;
-  self.localVideoTrack = nil;
+  //self.localAudioTrack = nil;
+  //self.localVideoTrack = nil;
   self.lastVideoFrame = nil;
 }
 
