@@ -34,6 +34,7 @@ static NSString* cameraDidStart               = @"cameraDidStart";
 static NSString* cameraWasInterrupted         = @"cameraWasInterrupted";
 static NSString* cameraInterruptionEnded      = @"cameraInterruptionEnded";
 static NSString* cameraDidStopRunning         = @"cameraDidStopRunning";
+static NSString* cameraSwitched               = @"cameraSwitched";
 static NSString* statsReceived                = @"statsReceived";
 static NSString* networkQualityLevelsChanged  = @"networkQualityLevelsChanged";
 static NSString* videoFrameCaptured  = @"videoFrameCaptured";
@@ -115,6 +116,7 @@ RCT_EXPORT_MODULE();
     cameraDidStart,
     cameraWasInterrupted,
     cameraInterruptionEnded,
+    cameraSwitched,
     statsReceived,
     networkQualityLevelsChanged,
     dominantSpeakerDidChange,
@@ -297,6 +299,11 @@ RCT_EXPORT_METHOD(flipCamera) {
         AVCaptureDevicePosition nextPosition = position == AVCaptureDevicePositionFront ? AVCaptureDevicePositionBack : AVCaptureDevicePositionFront;
         BOOL mirror = nextPosition == AVCaptureDevicePositionFront;
 
+        NSString *postionString = @"back";
+        if (nextPosition == AVCaptureDevicePositionFront) {
+            postionString = @"front";
+        }
+        
         AVCaptureDevice *captureDevice = [TVICameraSource captureDeviceForPosition:nextPosition];
         [self.camera selectCaptureDevice:captureDevice completion:^(AVCaptureDevice *device,
                 TVIVideoFormat *startFormat,
@@ -306,6 +313,7 @@ RCT_EXPORT_METHOD(flipCamera) {
                     renderer.mirror = mirror;
                 }
             }
+            [self sendEventCheckingListenerWithName:cameraSwitched body:@{@"cameraType": postionString}];
         }];
   }
 }
