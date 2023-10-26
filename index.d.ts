@@ -19,6 +19,7 @@ declare module "react-native-twilio-video-webrtc" {
      * this view to appear above other Twilio Video views. 
      */
      applyZOrder?: boolean | undefined;
+     onFrameDimensionsChanged?: (frame: any) => void;
   }
 
   export interface TwilioVideoLocalViewProps extends ViewProps {
@@ -30,6 +31,7 @@ declare module "react-native-twilio-video-webrtc" {
      * this view to appear above other Twilio Video views. 
      */
     applyZOrder?: boolean | undefined;
+    onFrameDimensionsChanged?: (frame: any) => void;
   }
 
   export interface Participant {

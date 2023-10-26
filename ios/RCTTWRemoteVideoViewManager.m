@@ -7,7 +7,7 @@
 //
 
 #import "RCTTWRemoteVideoViewManager.h"
-
+#import "UIView+Extra.h"
 #import <React/RCTConvert.h>
 #import "RCTTWVideoModule.h"
 
@@ -40,12 +40,14 @@
 
 @end
 
-@interface RCTTWRemoteVideoViewManager()
+@interface RCTTWRemoteVideoViewManager() <TVIVideoViewDelegate>
 @end
 
 @implementation RCTTWRemoteVideoViewManager
 
 RCT_EXPORT_MODULE()
+
+RCT_EXPORT_VIEW_PROPERTY(onFrameDimensionsChanged, RCTDirectEventBlock)
 
 RCT_CUSTOM_VIEW_PROPERTY(scalesType, NSInteger, TVIVideoView) {
   view.subviews[0].contentMode = [RCTConvert NSInteger:json];
@@ -54,6 +56,7 @@ RCT_CUSTOM_VIEW_PROPERTY(scalesType, NSInteger, TVIVideoView) {
 - (UIView *)view {
   UIView *container = [[UIView alloc] init];
   TVIVideoView *inner = [[TVIVideoView alloc] init];
+    inner.delegate = self;
   inner.autoresizingMask = (UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth);
   [container addSubview:inner];
   return container;
@@ -68,5 +71,11 @@ RCT_CUSTOM_VIEW_PROPERTY(trackIdentifier, RCTTWVideoTrackIdentifier, TVIVideoVie
   }
 }
 
+# pragma mark - TVIVideoViewDelegate
+- (void)videoViewDidReceiveData:(TVIVideoView *)view {
+    if (view.onFrameDimensionsChanged) {
+        view.onFrameDimensionsChanged(@{@"width": [NSNumber numberWithInt:view.videoDimensions.width], @"height": [NSNumber numberWithInt:view.videoDimensions.height]});
+    }
+}
 
 @end
