@@ -7,10 +7,10 @@
 //
 
 #import "RCTTWLocalVideoViewManager.h"
-
+#import "UIView+Extra.h"
 #import "RCTTWVideoModule.h"
 
-@interface RCTTWLocalVideoViewManager()
+@interface RCTTWLocalVideoViewManager() <TVIVideoViewDelegate>
 @end
 
 @implementation RCTTWLocalVideoViewManager
@@ -21,9 +21,12 @@ RCT_CUSTOM_VIEW_PROPERTY(scalesType, NSInteger, TVIVideoView) {
   view.subviews[0].contentMode = [RCTConvert NSInteger:json];
 }
 
+RCT_EXPORT_VIEW_PROPERTY(onFrameDimensionsChanged, RCTDirectEventBlock)
+
 - (UIView *)view {
   UIView *container = [[UIView alloc] init];
   TVIVideoView *inner = [[TVIVideoView alloc] init];
+  inner.delegate = self;
   inner.autoresizingMask = (UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth);
   [container addSubview:inner];
   return container;
@@ -40,6 +43,13 @@ RCT_CUSTOM_VIEW_PROPERTY(enabled, BOOL, TVIVideoView) {
       [videoModule removeLocalView:view.subviews[0]];
     }
   }
+}
+
+# pragma mark - TVIVideoViewDelegate
+- (void)videoViewDidReceiveData:(TVIVideoView *)view {
+    if (view.onFrameDimensionsChanged) {
+        view.onFrameDimensionsChanged(@{@"width": [NSNumber numberWithInt:view.videoDimensions.width], @"height": [NSNumber numberWithInt:view.videoDimensions.height]});
+    }
 }
 
 @end

@@ -265,7 +265,7 @@ public class CustomTwilioVideoView extends View implements LifecycleEventListene
     // ===== SETUP =================================================================================
 
     private VideoFormat buildVideoFormat() {
-        return new VideoFormat(VideoDimensions.CIF_VIDEO_DIMENSIONS, 15);
+        return new VideoFormat(VideoDimensions.VGA_VIDEO_DIMENSIONS, 15);
     }
 
     private CameraCapturer createCameraCaputer(Context context, String cameraId) {
@@ -283,7 +283,11 @@ public class CustomTwilioVideoView extends View implements LifecycleEventListene
                         public void onCameraSwitched(String newCameraId) {
                             setThumbnailMirror();
                             WritableMap event = new WritableNativeMap();
-                            event.putBoolean("isBackCamera", isCurrentCameraSourceBackFacing());
+                            if (isCurrentCameraSourceBackFacing()) {
+                                event.putString("cameraType",CustomTwilioVideoView.BACK_CAMERA_TYPE);
+                            } else {
+                                event.putString("cameraType",CustomTwilioVideoView.FRONT_CAMERA_TYPE);
+                            }
                             pushEvent(CustomTwilioVideoView.this, ON_CAMERA_SWITCHED, event);
                         }
 
@@ -744,7 +748,7 @@ public class CustomTwilioVideoView extends View implements LifecycleEventListene
         StoreData.isVideoEnabled = enabled;
 
         if (StoreData.cameraCapturer == null && enabled) {
-            String fallbackCameraType = cameraType == null ? CustomTwilioVideoView.FRONT_CAMERA_TYPE : cameraType;
+            String fallbackCameraType = CustomTwilioVideoView.FRONT_CAMERA_TYPE;
             boolean createVideoStatus = createLocalVideo(true, fallbackCameraType);
             if (!createVideoStatus) {
                 Log.d("RNTwilioVideo", "Failed to create local video");

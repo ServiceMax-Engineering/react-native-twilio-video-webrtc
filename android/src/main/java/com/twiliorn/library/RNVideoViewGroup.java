@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import androidx.annotation.StringDef;
 
+import com.facebook.react.bridge.UiThreadUtil;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.WritableNativeMap;
 import com.facebook.react.uimanager.ThemedReactContext;
@@ -33,6 +34,11 @@ public class RNVideoViewGroup extends ViewGroup {
     private final Object layoutSync = new Object();
     private RendererCommon.ScalingType scalingType = RendererCommon.ScalingType.SCALE_ASPECT_FILL;
     private final RCTEventEmitter eventEmitter;
+
+    private int initialLeft = 0;
+    private int initialRight = 0;
+    private int initialTop = 0;
+    private int initialBottom = 0;
 
     @Retention(RetentionPolicy.SOURCE)
     @StringDef({ON_FRAME_DIMENSIONS_CHANGED})
@@ -69,6 +75,13 @@ public class RNVideoViewGroup extends ViewGroup {
                             }
                             RNVideoViewGroup.this.forceLayout();
 
+                            UiThreadUtil.runOnUiThread(
+                                    new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            RNVideoViewGroup.this.layoutSurfaceViewRenderer();
+                                        }
+                                    });
                             WritableMap event = new WritableNativeMap();
                             event.putInt("height", vh);
                             event.putInt("width", vw);
@@ -90,8 +103,23 @@ public class RNVideoViewGroup extends ViewGroup {
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        initialLeft = l;
+        initialRight = r;
+        initialTop = t;
+        initialBottom = b;
+        this.layoutSurfaceViewRenderer();
+    }
+
+    private void layoutSurfaceViewRenderer() {
+        int l = initialLeft;
+        int t = initialTop;
+        int r = initialRight;
+        int b = initialBottom;
+
         int height = b - t;
         int width = r - l;
+
+
         if (height == 0 || width == 0) {
             l = t = r = b = 0;
         } else {

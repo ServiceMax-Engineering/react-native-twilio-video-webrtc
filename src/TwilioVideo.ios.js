@@ -132,6 +132,10 @@ export default class TwilioVideo extends Component {
      */
     onCameraDidStopRunning: PropTypes.func,
     /**
+     * Callback that is called when camera source changes
+     */
+    onCameraSwitched: PropTypes.func,
+    /**
      * Called when stats are received (after calling getStats)
      *
      */
@@ -445,6 +449,11 @@ export default class TwilioVideo extends Component {
       this._eventEmitter.addListener('cameraDidStopRunning', (data) => {
         if (this.props.onCameraDidStopRunning) {
           this.props.onCameraDidStopRunning(data)
+        }
+      }),
+      this._eventEmitter.addListener('cameraSwitched', (data) => {
+        if (this.props.onCameraSwitched) {
+          this.props.onCameraSwitched(data)
         }
       }),
       this._eventEmitter.addListener('statsReceived', (data) => {

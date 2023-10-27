@@ -20,13 +20,28 @@ class TwilioVideoLocalView extends Component {
      * How the video stream should be scaled to fit its
      * container.
      */
-    scaleType: PropTypes.oneOf(['fit', 'fill'])
+    scaleType: PropTypes.oneOf(['fit', 'fill']),
+    onFrameDimensionsChanged: PropTypes.func,
+  }
+
+  buildNativeEventWrappers () {
+    return [
+      'onFrameDimensionsChanged'
+    ].reduce((wrappedEvents, eventName) => {
+      if (this.props[eventName]) {
+        return {
+          ...wrappedEvents,
+          [eventName]: data => this.props[eventName](data.nativeEvent)
+        }
+      }
+      return wrappedEvents
+    }, {})
   }
 
   render () {
     const scalesType = this.props.scaleType === 'fit' ? 1 : 2
     return (
-      <RCTTWLocalVideoView scalesType={scalesType} {...this.props}>
+      <RCTTWLocalVideoView scalesType={scalesType} {...this.props} {...this.buildNativeEventWrappers()}>
         {this.props.children}
       </RCTTWLocalVideoView>
     )
