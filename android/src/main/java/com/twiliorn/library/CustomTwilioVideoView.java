@@ -970,10 +970,6 @@ public class CustomTwilioVideoView extends View implements LifecycleEventListene
 
                 //There is not .publish it's publishTrack
                 StoreData.localParticipant.publishTrack(StoreData.localDataTrack);
-
-                for (RemoteParticipant participant : participants) {
-                    addParticipant(room, participant);
-                }
             }
 
             @Override
