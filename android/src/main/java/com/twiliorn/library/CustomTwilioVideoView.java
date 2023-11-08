@@ -970,6 +970,10 @@ public class CustomTwilioVideoView extends View implements LifecycleEventListene
 
                 //There is not .publish it's publishTrack
                 StoreData.localParticipant.publishTrack(StoreData.localDataTrack);
+
+                for (RemoteParticipant participant : participants) {
+                    addParticipant(room, participant, false);
+                }
             }
 
             @Override
@@ -1025,7 +1029,7 @@ public class CustomTwilioVideoView extends View implements LifecycleEventListene
 
             @Override
             public void onParticipantConnected(Room room, RemoteParticipant participant) {
-                addParticipant(room, participant);
+                addParticipant(room, participant, true);
 
             }
 
@@ -1063,14 +1067,16 @@ public class CustomTwilioVideoView extends View implements LifecycleEventListene
     /*
      * Called when participant joins the room
      */
-    private void addParticipant(Room room, RemoteParticipant remoteParticipant) {
+    private void addParticipant(Room room, RemoteParticipant remoteParticipant, boolean notify) {
 
         WritableMap event = new WritableNativeMap();
         event.putString("roomName", room.getName());
         event.putString("roomSid", room.getSid());
         event.putMap("participant", buildParticipant(remoteParticipant));
 
-        pushEvent(this, ON_PARTICIPANT_CONNECTED, event);
+        if (notify) {
+            pushEvent(this, ON_PARTICIPANT_CONNECTED, event);
+        }
 
         /*
          * Start listening for participant media events
