@@ -147,7 +147,7 @@ public class CustomTwilioVideoViewManager extends SimpleViewManager<CustomTwilio
                 view.publishLocalAudio(args.getBoolean(0));
                 break;
             case CAPTURE_VIDEO_FRAME:
-                view.captureVideoFrame();
+                view.captureVideoFrame(args.getBoolean(0));
         }
     }
 

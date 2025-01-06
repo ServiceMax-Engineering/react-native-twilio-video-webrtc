@@ -518,8 +518,8 @@ RCT_EXPORT_METHOD(disconnect) {
     self.lastVideoFrame = nil;
 }
 
-RCT_EXPORT_METHOD(captureVideoFrame) {
-    NSString *captureLastVideoFrameImagePath = [self.lastVideoFrame getImagePath:self.remoteVideoTrack ? false : true isMirroring:self.mirror];
+RCT_EXPORT_METHOD(captureVideoFrame:(BOOL)ignoreOrientation) {
+    NSString *captureLastVideoFrameImagePath = [self.lastVideoFrame getImagePath:self.remoteVideoTrack ? false : true isMirroring:self.mirror ignoreOrientation:ignoreOrientation];
     if (captureLastVideoFrameImagePath) {
         [self sendEventCheckingListenerWithName:videoFrameCaptured body:@{ @"path": captureLastVideoFrameImagePath}];
     }

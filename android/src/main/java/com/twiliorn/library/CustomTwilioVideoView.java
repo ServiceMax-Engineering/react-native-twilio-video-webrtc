@@ -713,13 +713,13 @@ public class CustomTwilioVideoView extends View implements LifecycleEventListene
         }
     }
 
-    public void captureVideoFrame() {
+    public void captureVideoFrame(boolean ignoreOrientation) {
         PatchedVideoView videoView = StoreData.isVideoEnabled ? StoreData.thumbnailVideoView : StoreData.remoteThumbnailVideoView;
         if (videoView != null) {
             videoView.setVideoViewCaptureListener(new PatchedVideoView.VideoViewCaptureListener() {
                 @Override
                 public void onBitmapReady(Bitmap bitMap) {
-                    String path = BitmapImageHelper.saveImage(bitMap, getContext(), currentDeviceOrientation);
+                    String path = BitmapImageHelper.saveImage(bitMap, getContext(), ignoreOrientation ? "PORTRAIT" : currentDeviceOrientation);
                     WritableMap event = new WritableNativeMap();
                     event.putString("path", path);
                     pushEvent(CustomTwilioVideoView.this, ON_VIDEO_FRAME_CAPTURED, event);
