@@ -16,10 +16,10 @@ declare module "react-native-twilio-video-webrtc" {
     scaleType?: scaleType;
     /**
      * Whether to apply Z ordering to this view.  Setting this to true will cause
-     * this view to appear above other Twilio Video views. 
+     * this view to appear above other Twilio Video views.
      */
-     applyZOrder?: boolean | undefined;
-     onFrameDimensionsChanged?: (frame: any) => void;
+    applyZOrder?: boolean | undefined;
+    onFrameDimensionsChanged?: (frame: any) => void;
   }
 
   export interface TwilioVideoLocalViewProps extends ViewProps {
@@ -28,7 +28,7 @@ declare module "react-native-twilio-video-webrtc" {
     scaleType?: scaleType;
     /**
      * Whether to apply Z ordering to this view.  Setting this to true will cause
-     * this view to appear above other Twilio Video views. 
+     * this view to appear above other Twilio Video views.
      */
     applyZOrder?: boolean | undefined;
     onFrameDimensionsChanged?: (frame: any) => void;
@@ -87,26 +87,32 @@ declare module "react-native-twilio-video-webrtc" {
   export type RoomErrorEventCb = (t: RoomErrorEventArgs) => void;
 
   export type ParticipantEventCb = (p: ParticipantEventArgs) => void;
-  
-  export type NetworkLevelChangeEventCb = (p: NetworkLevelChangeEventArgs) => void;
+
+  export type NetworkLevelChangeEventCb = (
+    p: NetworkLevelChangeEventArgs
+  ) => void;
 
   export type DominantSpeakerChangedEventArgs = RoomEventCommonArgs & {
     participant: Participant;
-  }
-  
-  export type DominantSpeakerChangedCb = (d: DominantSpeakerChangedEventArgs) => void;
+  };
+
+  export type DominantSpeakerChangedCb = (
+    d: DominantSpeakerChangedEventArgs
+  ) => void;
 
   export type LocalParticipantSupportedCodecsCbEventArgs = {
     supportedCodecs: Array<string>;
-  }
+  };
 
-  export type LocalParticipantSupportedCodecsCb = (d: LocalParticipantSupportedCodecsCbEventArgs) => void;
+  export type LocalParticipantSupportedCodecsCb = (
+    d: LocalParticipantSupportedCodecsCbEventArgs
+  ) => void;
 
   export type TwilioVideoProps = ViewProps & {
     onCameraDidStart?: () => void;
     onCameraDidStopRunning?: (err: any) => void;
     onCameraWasInterrupted?: () => void;
-    onCameraSwitched?:(source: cameraType) => void;
+    onCameraSwitched?: (source: cameraType) => void;
     onDominantSpeakerDidChange?: DominantSpeakerChangedCb;
     onParticipantAddedAudioTrack?: TrackEventCb;
     onParticipantAddedVideoTrack?: TrackEventCb;
@@ -126,11 +132,11 @@ declare module "react-native-twilio-video-webrtc" {
     onNetworkQualityLevelsChanged?: NetworkLevelChangeEventCb;
     onLocalParticipantSupportedCodecs?: LocalParticipantSupportedCodecsCb;
     onVideoFrameCaptured?: ({ path }: { path: string }) => void;
-    
+
     onStatsReceived?: (data: any) => void;
     onDataTrackMessageReceived?: DataTrackEventCb;
     // iOS only
-    autoInitializeCamera?: boolean;    
+    autoInitializeCamera?: boolean;
     ref?: React.Ref<any>;
   };
 
@@ -170,7 +176,7 @@ declare module "react-native-twilio-video-webrtc" {
     setLocalAudioEnabled: (enabled: boolean) => Promise<boolean>;
     setRemoteAudioEnabled: (enabled: boolean) => Promise<boolean>;
     setBluetoothHeadsetConnected: (enabled: boolean) => Promise<boolean>;
-    captureVideoFrame: () => void;
+    captureVideoFrame: (ignoreOrientation?: boolean) => void;
     connect: (options: iOSConnectParams | androidConnectParams) => void;
     disconnect: () => void;
     flipCamera: () => void;
@@ -183,13 +189,9 @@ declare module "react-native-twilio-video-webrtc" {
     sendString: (message: string) => void;
   }
 
-  class TwilioVideoLocalView extends React.Component<
-    TwilioVideoLocalViewProps
-  > {}
+  class TwilioVideoLocalView extends React.Component<TwilioVideoLocalViewProps> {}
 
-  class TwilioVideoParticipantView extends React.Component<
-    TwilioVideoParticipantViewProps
-  > {}
+  class TwilioVideoParticipantView extends React.Component<TwilioVideoParticipantViewProps> {}
 
   export { TwilioVideoLocalView, TwilioVideoParticipantView, TwilioVideo };
 }

@@ -10,7 +10,7 @@
 
 @implementation TVIVideoFrame (Image)
 
-- (UIImage *)getImage:(BOOL)isLocal isMirroring:(BOOL)isMirroring {
+- (UIImage *)getImage:(BOOL)isLocal isMirroring:(BOOL)isMirroring ignoreOrientation:(BOOL)ignoreOrientation {
     CIImage *ciImage = [self convertToCIImage];
     
     CGImagePropertyOrientation newOrientation = kCGImagePropertyOrientationUp;
@@ -42,14 +42,14 @@
                 newOrientation = kCGImagePropertyOrientationUp;
                 break;
             case UIDeviceOrientationLandscapeLeft:
-                newOrientation = kCGImagePropertyOrientationLeft;
+                newOrientation = ignoreOrientation ? kCGImagePropertyOrientationUp : kCGImagePropertyOrientationLeft;
                 break;
             case UIDeviceOrientationLandscapeRight:
-                newOrientation = kCGImagePropertyOrientationRight;
+                newOrientation = ignoreOrientation ? kCGImagePropertyOrientationUp : kCGImagePropertyOrientationRight;
                 break;
             case UIDeviceOrientationPortraitUpsideDown:
             case UIDeviceOrientationFaceDown:
-                newOrientation = kCGImagePropertyOrientationDown;
+                newOrientation = ignoreOrientation ? kCGImagePropertyOrientationUp : kCGImagePropertyOrientationDown;
                 break;
             default:
                 break;
@@ -62,8 +62,8 @@
     return image;
 }
 
-- (NSString *)getImagePath:(BOOL)isLocal isMirroring:(BOOL)isMirroring {
-    UIImage *lastRemoteVideoImage = [self getImage:isLocal isMirroring:isMirroring];
+- (NSString *)getImagePath:(BOOL)isLocal isMirroring:(BOOL)isMirroring ignoreOrientation:(BOOL)ignoreOrientation {
+    UIImage *lastRemoteVideoImage = [self getImage:isLocal isMirroring:isMirroring ignoreOrientation:ignoreOrientation];
     NSData *data = UIImageJPEGRepresentation(lastRemoteVideoImage, 1.0);
     
     if (!data) return nil;
