@@ -11,9 +11,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface TVIVideoFrame (Image)
 
-- (UIImage *)getImage:(BOOL)isLocal isMirroring:(BOOL)isMirroring;
+- (UIImage *)getImage:(BOOL)isLocal isMirroring:(BOOL)isMirroring ignoreOrientation:(BOOL)ignoreOrientation;
 
-- (NSString *)getImagePath:(BOOL)isLocal isMirroring:(BOOL)isMirroring;
+- (NSString *)getImagePath:(BOOL)isLocal isMirroring:(BOOL)isMirroring ignoreOrientation:(BOOL)ignoreOrientation;
 
 @end
 
